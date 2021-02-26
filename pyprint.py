@@ -39,11 +39,16 @@ __version__ = "1.0.0"
 @click.version_option(version=__version__, message="%(version)s")
 def main(dir, pattern, dry_run, include_hidden):
     """Print all files located in DIR."""
-    pattern = re.compile(pattern)
-    to_print = files_to_print(dir, pattern, include_hidden)
+    regex = re.compile(pattern)
+    to_print = files_to_print(dir, regex, include_hidden)
     if dry_run:
-        print("The following files would be sent to print:")
-        print("  " + "\n  ".join(to_print))
+        if len(to_print) == 0:
+            click.echo(f"No files matching '{pattern}' in '{dir}'.")
+        else:
+            print(
+                "The following files would be sent to print:\n"
+                "  " + "\n  ".join(to_print)
+            )
     else:
         for f in to_print:
             subprocess.run(
