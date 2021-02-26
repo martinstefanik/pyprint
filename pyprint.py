@@ -23,29 +23,40 @@ __version__ = "1.0.0"
     type=click.STRING,
     help="Python regular expression to filter out files to be printed.",
 )
+@click.option(
+    "-d",
+    "--dry-run",
+    is_flag=True,
+    help="Run without actually sending the files to print. This shows the list "
+    "of files that would be printed with the current set of options.",
+)
 @click.version_option(version=__version__, message="%(version)s")
-def main(dir, pattern):
+def main(dir, pattern, dry_run):
     """Print all files located in DIR."""
     pattern = re.compile(pattern)
     to_print = files_to_print(dir, pattern)
-    for f in to_print:
-        subprocess.run(
-            [
-                "lp",
-                "-d",
-                "p-hg-g-53-1",
-                "-o",
-                "sides=two-sided-long-edge",
-                "-o",
-                "media=A4",
-                "-o",
-                "collate=true",
-                "-o",
-                "HPStaplerOptions=1StapleLeft",
-                f,
-            ],
-            stdout=subprocess.DEVNULL,
-        )
+    if dry_run:
+        print("The following files would be sent to print:")
+        print("  " + "\n".join(to_print))
+    else:
+        for f in to_print:
+            subprocess.run(
+                [
+                    "lp",
+                    "-d",
+                    "p-hg-g-53-1",
+                    "-o",
+                    "sides=two-sided-long-edge",
+                    "-o",
+                    "media=A4",
+                    "-o",
+                    "collate=true",
+                    "-o",
+                    "HPStaplerOptions=1StapleLeft",
+                    f,
+                ],
+                stdout=subprocess.DEVNULL,
+            )
 
 
 def files_to_print(dir, pattern):
