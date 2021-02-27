@@ -74,6 +74,7 @@ def main(dir, pattern, dry_run, include_hidden):
                         "collate=true",
                         "-o",
                         "HPStaplerOptions=1StapleLeft",
+                        "--",
                         f,
                     ],
                     stdout=subprocess.DEVNULL,
