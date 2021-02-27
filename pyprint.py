@@ -59,28 +59,26 @@ def main(dir, pattern, dry_run, include_hidden):
                 "  " + "\n  ".join(to_print)
             )
     else:
-        for f in to_print:
-            try:
-                subprocess.run(
-                    [
-                        "lp",
-                        "-d",
-                        "p-hg-g-53-1",
-                        "-o",
-                        "sides=two-sided-long-edge",
-                        "-o",
-                        "media=A4",
-                        "-o",
-                        "collate=true",
-                        "-o",
-                        "HPStaplerOptions=1StapleLeft",
-                        "--",
-                        f,
-                    ],
-                    stdout=subprocess.DEVNULL,
-                )
-            except Exception:
-                click.echo("Failed to print '{f}'.")
+        try:
+            subprocess.run(
+                [
+                    "lp",
+                    "-d",
+                    "p-hg-g-53-1",
+                    "-o",
+                    "sides=two-sided-long-edge",
+                    "-o",
+                    "media=A4",
+                    "-o",
+                    "collate=true",
+                    "-o",
+                    "HPStaplerOptions=1StapleLeft",
+                    "--"
+                ].append(to_print),
+                stdout=subprocess.DEVNULL,
+            )
+        except Exception:
+            click.echo("Failed to print '{f}'.")
 
 
 def files_to_print(dir, pattern, include_hidden):
