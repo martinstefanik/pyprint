@@ -18,14 +18,6 @@ __version__ = "1.0.0"
     nargs=1,
 )
 @click.option(
-    "-p",
-    "--pattern",
-    type=click.STRING,
-    default=None,
-    show_default=False,
-    help="Python regular expression to filter out files to be printed.",
-)
-@click.option(
     "-d",
     "--dry-run",
     is_flag=True,
@@ -38,24 +30,46 @@ __version__ = "1.0.0"
     is_flag=True,
     help="Include hidden files and files in a hidden subdirectories of DIR.",
 )
+@click.option(
+    "-p",
+    "--printer",
+    type=click.STRING,
+    prompt="Printer to be used",
+    help="Name of the printer that should be used.",
+)
+@click.option(
+    "-r",
+    "--regex",
+    type=click.STRING,
+    default=None,
+    show_default=False,
+    help="Python regular expression to filter out files to be printed.",
+)
 @click.version_option(version=__version__, message="%(version)s")
-def main(dir, pattern, dry_run, include_hidden):
+def main(dir, dry_run, include_hidden, printer, regex):
     """
     Print all files located under DIR. Files without read permission and files
     in directories without read permission are automatically ignored.
     """
+    # Verify that the printer given is available
+    printers = get_available_printers()
+    if printer not in printers:
+        raise click.ClickException(f"Printer not available: {printer}.")
+
+    # Validate the regex
     try:
-        if pattern is not None:
-            pattern = re.compile(pattern)
+        if regex is not None:
+            regex = re.compile(regex)
     except re.error:
-        raise click.ClickException(f"Regular expression error: '{pattern}'.")
-    to_print = files_to_print(dir, pattern, include_hidden)
+        raise click.ClickException(f"Regular expression error: '{regex}'.")
+
+    to_print = files_to_print(dir, regex, include_hidden)
     if dry_run:
         if len(to_print) == 0:
-            click.echo(f"No files matching '{pattern}' in '{dir}'.")
+            click.echo(f"No files matching '{regex}' in '{dir}'.")
         else:
             print(
-                "The following files would be sent to print:\n"
+                f"The following files would be sent to printer '{printer}':\n"
                 "  " + "\n  ".join(to_print)
             )
     else:
@@ -64,7 +78,7 @@ def main(dir, pattern, dry_run, include_hidden):
                 [
                     "lp",
                     "-d",
-                    "p-hg-g-53-1",
+                    printer,
                     "-o",
                     "sides=two-sided-long-edge",
                     "-o",
@@ -73,20 +87,32 @@ def main(dir, pattern, dry_run, include_hidden):
                     "collate=true",
                     "-o",
                     "HPStaplerOptions=1StapleLeft",
-                    "--"
+                    "--",
                 ].append(to_print),
                 stdout=subprocess.DEVNULL,
             )
         except Exception:
-            click.echo("Failed to print '{f}'.")
+            click.echo("Printing failed")
 
 
-def files_to_print(dir, pattern, include_hidden):
-    """Get a list of files in a directory whose names conform to a pattern."""
-    if pattern is not None:
+def get_available_printers():
+    """Get the list of available printers."""
+    try:
+        pr = subprocess.run(["lpstat", "-a"], check=True, capture_output=True)
+        printers = pr.stdout.decode("UTF-8").splitlines()
+        printers = [p.split(" ")[0] for p in printers]
+    except subprocess.CalledProcessError:
+        click.ClickException("Shell command error.")
+
+    return printers
+
+
+def files_to_print(dir, regex, include_hidden):
+    """Get a list of files in a directory whose names conform to a regex."""
+    if regex is not None:
         to_print = []
         for f in files(dir, include_hidden):
-            if os.path.isfile(f) and pattern.search(f):
+            if os.path.isfile(f) and regex.search(f):
                 to_print.append(f)
     else:
         to_print = list(files(dir, include_hidden))
