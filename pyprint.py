@@ -21,6 +21,8 @@ __version__ = "1.0.0"
     "-p",
     "--pattern",
     type=click.STRING,
+    default=None,
+    show_default=False,
     help="Python regular expression to filter out files to be printed.",
 )
 @click.option(
@@ -38,9 +40,16 @@ __version__ = "1.0.0"
 )
 @click.version_option(version=__version__, message="%(version)s")
 def main(dir, pattern, dry_run, include_hidden):
-    """Print all files located in DIR."""
-    regex = re.compile(pattern)
-    to_print = files_to_print(dir, regex, include_hidden)
+    """
+    Print all files located under DIR. Files without read permission and files
+    in directories without read permission are automatically ignored.
+    """
+    try:
+        if pattern is not None:
+            pattern = re.compile(pattern)
+    except re.error:
+        raise click.ClickException(f"Regular expression error: '{pattern}'.")
+    to_print = files_to_print(dir, pattern, include_hidden)
     if dry_run:
         if len(to_print) == 0:
             click.echo(f"No files matching '{pattern}' in '{dir}'.")
@@ -51,31 +60,38 @@ def main(dir, pattern, dry_run, include_hidden):
             )
     else:
         for f in to_print:
-            subprocess.run(
-                [
-                    "lp",
-                    "-d",
-                    "p-hg-g-53-1",
-                    "-o",
-                    "sides=two-sided-long-edge",
-                    "-o",
-                    "media=A4",
-                    "-o",
-                    "collate=true",
-                    "-o",
-                    "HPStaplerOptions=1StapleLeft",
-                    f,
-                ],
-                stdout=subprocess.DEVNULL,
-            )
+            try:
+                subprocess.run(
+                    [
+                        "lp",
+                        "-d",
+                        "p-hg-g-53-1",
+                        "-o",
+                        "sides=two-sided-long-edge",
+                        "-o",
+                        "media=A4",
+                        "-o",
+                        "collate=true",
+                        "-o",
+                        "HPStaplerOptions=1StapleLeft",
+                        f,
+                    ],
+                    stdout=subprocess.DEVNULL,
+                )
+            except Exception:
+                click.echo("Failed to print '{f}'.")
 
 
 def files_to_print(dir, pattern, include_hidden):
     """Get a list of files in a directory whose names conform to a pattern."""
-    to_print = []
-    for f in files(dir, include_hidden):
-        if os.path.isfile(f) and pattern.search(f):
-            to_print.append(f)
+    if pattern is not None:
+        to_print = []
+        for f in files(dir, include_hidden):
+            if os.path.isfile(f) and pattern.search(f):
+                to_print.append(f)
+    else:
+        to_print = list(files(dir, include_hidden))
+
     return to_print
 
 
