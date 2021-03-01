@@ -60,8 +60,10 @@ def main(dir, dry_run, include_hidden, printer, regex):
     try:
         if regex is not None:
             regex = re.compile(regex)
-    except re.error:
-        raise click.ClickException(f"Regular expression error: '{regex}'.")
+    except re.error as err:
+        raise click.ClickException(
+            f"Regular expression error: {str(err).capitalize()}: '{regex}'."
+        )
 
     to_print = files_to_print(dir, regex, include_hidden)
     if dry_run:
