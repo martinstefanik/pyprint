@@ -88,8 +88,10 @@ def main(dir, dry_run, include_hidden, printer, regex):
                     "-o",
                     "HPStaplerOptions=1StapleLeft",
                     "--",
-                ].append(to_print),
+                ]
+                + to_print,
                 stdout=subprocess.DEVNULL,
+                check=True,
             )
         except Exception:
             click.echo("Printing failed")
