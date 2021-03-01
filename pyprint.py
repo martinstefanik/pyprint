@@ -54,7 +54,9 @@ def main(dir, dry_run, include_hidden, printer, regex):
     # Verify that the printer given is available
     printers = get_available_printers()
     if printer not in printers:
-        raise click.ClickException(f"Printer not available: {printer}.")
+        raise click.ClickException(
+            f"Printer called '{printer}'is not available."
+        )
 
     # Validate the regex
     try:
@@ -65,7 +67,12 @@ def main(dir, dry_run, include_hidden, printer, regex):
             f"Regular expression error: {str(err).capitalize()}: '{regex}'."
         )
 
+    # Get the list of files that should be printed
     to_print = files_to_print(dir, regex, include_hidden)
+
+    # Print the files
+    if len(to_print) == 0:
+        raise click.ClickException(f"No files matching '{regex}' in '{dir}'.")
     if dry_run:
         if len(to_print) == 0:
             click.echo(f"No files matching '{regex}' in '{dir}'.")
