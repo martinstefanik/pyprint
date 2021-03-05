@@ -18,13 +18,6 @@ __version__ = "1.0.0"
     nargs=1,
 )
 @click.option(
-    "-d",
-    "--dry-run",
-    is_flag=True,
-    help="Run without actually sending the file(s) to print. This shows the "
-    "list of files that would be printed with the current set of options.",
-)
-@click.option(
     "-h",
     "--include-hidden",
     is_flag=True,
@@ -50,13 +43,27 @@ __version__ = "1.0.0"
     "RESOURCE is not a directory, this option is ignored if given.",
 )
 @click.option(
+    "-d",
+    "--sides",
+    type=click.Choice(["1", "2"]),
+    default="2",
+    show_default=True,
+    help="Indicates whether the printing should be one-sided or two-sided.",
+)
+@click.option(
     "-s",
     "--staple",
     is_flag=True,
     help="Indicates whether to staple each printed document.",
 )
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Run without actually sending the file(s) to print. This shows the "
+    "list of files that would be printed with the current set of options.",
+)
 @click.version_option(version=__version__, message="%(version)s")
-def main(resource, dry_run, include_hidden, printer, regex, staple):
+def main(resource, dry_run, include_hidden, printer, regex, staple, sides):
     """
     Print the given RESOURCE, which can be either a file or a directory. If
     RESOURCE is a directory, all files located under that directory are printed
@@ -97,13 +104,13 @@ def main(resource, dry_run, include_hidden, printer, regex, staple):
 
     # Print the files
     if dry_run:
-        _ = build_print_command(printer, staple, to_print)
+        _ = build_print_command(printer, staple, sides, to_print)
         click.echo(
             f"The following files would be sent to printer '{printer}':\n"
             "  " + "\n  ".join(to_print)
         )
     else:
-        command = build_print_command(printer, staple, to_print)
+        command = build_print_command(printer, staple, sides, to_print)
         try:
             subprocess.run(command, stdout=subprocess.DEVNULL, check=True)
         except FileNotFoundError:
@@ -169,15 +176,19 @@ def files(dir, include_hidden):
             yield os.path.join(root, e)
 
 
-def build_print_command(printer, staple, to_print):
+def build_print_command(printer, staple, sides, to_print):
     """Build an `lp` print command based on the user input."""
     stapling_option = set_stapling_option(printer, staple)
+    if sides == "1":
+        sides = "one-sided"
+    else:
+        sides = "two-sided-long-edge"
     command = [
         "lp",
         "-d",
         printer,
         "-o",
-        "sides=two-sided-long-edge",
+        f"sides={sides}",
         "-o",
         "media=A4",
         "-o",
