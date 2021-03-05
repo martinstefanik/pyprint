@@ -13,29 +13,31 @@ __version__ = "1.0.0"
 
 @click.command()
 @click.argument(
-    "dir",
-    type=click.Path(exists=True, dir_okay=True, file_okay=False, readable=True),
+    "resource",
+    type=click.Path(exists=True, dir_okay=True, file_okay=True, readable=True),
     nargs=1,
 )
 @click.option(
     "-d",
     "--dry-run",
     is_flag=True,
-    help="Run without actually sending the files to print. This shows the list "
-    "of files that would be printed with the current set of options.",
+    help="Run without actually sending the file(s) to print. This shows the "
+    "list of files that would be printed with the current set of options.",
 )
 @click.option(
     "-h",
     "--include-hidden",
     is_flag=True,
-    help="Include hidden files and files in a hidden subdirectories of DIR.",
+    help="Include hidden files and files in the hidden subdirectories of "
+    "RESOURCE, if resource is a directory. If RESOURCE is not a directory, "
+    "this option is ignored if given.",
 )
 @click.option(
     "-p",
     "--printer",
     type=click.STRING,
     prompt="Printer to be used",
-    help="Name of the printer that should be used.",
+    help="Name of the printer to which the printing job should be sent.",
 )
 @click.option(
     "-r",
@@ -43,29 +45,34 @@ __version__ = "1.0.0"
     type=click.STRING,
     default=None,
     show_default=False,
-    help="Python regular expression to filter out files to be printed.",
+    help="Python regular expression to filter out files to be printed. If "
+    "RESOURCE is not a directory, this option is ignored if given.",
 )
 @click.option(
     "-s",
     "--staple",
     is_flag=True,
-    help="Indicates whether pages of each printed document should be stapled.",
+    help="Indicates whether to staple each printed document.",
 )
 @click.version_option(version=__version__, message="%(version)s")
-def main(dir, dry_run, include_hidden, printer, regex, staple):
+def main(resource, dry_run, include_hidden, printer, regex, staple):
     """
-    Print all files located under DIR. Files without read permission and files
-    in directories without read permission are automatically ignored.
+    Print the given RESOURCE, which can be either a file or a directory. If
+    RESOURCE is a directory, all files located under that directory are printed
+    unless they are filtered (see the regex option for more details).
     """
     # Verify that the printer given is available
     printers = get_available_printers()
     if printer not in printers:
         raise click.ClickException(
-            f"Printer called '{printer}'is not available."
+            f"Printer called '{printer}' is not available."
         )
 
-    # Validate the regex
+    # Validate the regex if needed
+    file_input = os.path.isfile(resource)
     try:
+        if file_input:  # ignore regex if file is given
+            regex = None
         if regex is not None:
             regex = re.compile(regex)
     except re.error as err:
@@ -74,11 +81,16 @@ def main(dir, dry_run, include_hidden, printer, regex, staple):
         )
 
     # Get the list of files that should be printed
-    to_print = files_to_print(dir, regex, include_hidden)
+    if file_input:
+        to_print = [resource]
+    else:
+        to_print = files_to_print(resource, regex, include_hidden)
+        if len(to_print) == 0:
+            raise click.ClickException(
+                f"No files matching '{regex}' in '{resource}'."
+            )
 
     # Print the files
-    if len(to_print) == 0:
-        raise click.ClickException(f"No files matching '{regex}' in '{dir}'.")
     if dry_run:
         _ = build_print_command(printer, staple, to_print)
         print(
@@ -100,7 +112,7 @@ def get_available_printers():
         printers = pr.stdout.decode("UTF-8").splitlines()
         printers = [p.split(" ")[0] for p in printers]
     except subprocess.CalledProcessError:
-        click.ClickException("Shell command error.")
+        click.ClickException("Unknown error.")
 
     return printers
 
