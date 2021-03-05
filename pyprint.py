@@ -134,7 +134,7 @@ def files(dir, include_hidden):
     """Generate files and directories located under a given directory."""
     for root, dirs, files in os.walk(dir):
         if not include_hidden:
-            if re.search(r"\.(?!/|$).*", root) is not None:
+            if re.search(r"/\.", root) is not None:
                 continue
             entries = [e for e in dirs + files if not e.startswith(".")]
         else:
