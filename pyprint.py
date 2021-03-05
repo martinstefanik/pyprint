@@ -36,8 +36,9 @@ __version__ = "1.0.0"
     "-p",
     "--printer",
     type=click.STRING,
-    prompt="Printer to be used",
-    help="Name of the printer to which the printing job should be sent.",
+    help="Name of the printer to which the printing job should be sent. If "
+    "not given, the user is given the list of available printers and prompted "
+    "to pick one.",
 )
 @click.option(
     "-r",
@@ -61,9 +62,13 @@ def main(resource, dry_run, include_hidden, printer, regex, staple):
     RESOURCE is a directory, all files located under that directory are printed
     unless they are filtered (see the regex option for more details).
     """
-    # Verify that the printer given is available
+    # Handle printer
     printers = get_available_printers()
-    if printer not in printers:
+    if len(printers) == 0:
+        raise click.ClickException("No printers available. Exiting.")
+    elif printer is None:  # prompt for printer if it is not given
+        printer = prompt_for_printer(printers)
+    elif printer not in printers:  # verify that the printer given is available
         raise click.ClickException(
             f"Printer called '{printer}' is not available."
         )
@@ -93,7 +98,7 @@ def main(resource, dry_run, include_hidden, printer, regex, staple):
     # Print the files
     if dry_run:
         _ = build_print_command(printer, staple, to_print)
-        print(
+        click.echo(
             f"The following files would be sent to printer '{printer}':\n"
             "  " + "\n  ".join(to_print)
         )
@@ -101,8 +106,25 @@ def main(resource, dry_run, include_hidden, printer, regex, staple):
         command = build_print_command(printer, staple, to_print)
         try:
             subprocess.run(command, stdout=subprocess.DEVNULL, check=True)
+        except FileNotFoundError:
+            raise click.ClickException(
+                "CUPS doesn't seem to be installed: lp unavailable."
+            )
         except Exception:
-            click.echo("Printing failed")
+            raise click.ClickException("Unknown error.")
+
+
+def prompt_for_printer(printers):
+    """Prompt the user to select from a list of printers."""
+    numbers = list(range(1, len(printers) + 1))
+    enum_printers = [f"{i}) {printers[i - 1]}" for i in numbers]
+    click.echo("Available printers:\n  " + "\n  ".join(enum_printers))
+    printer_number = click.prompt(
+        "Printer to use",
+        type=click.Choice([str(i) for i in numbers]),
+        show_choices=False,
+    )
+    return printers[int(printer_number) - 1]
 
 
 def get_available_printers():
@@ -111,8 +133,12 @@ def get_available_printers():
         pr = subprocess.run(["lpstat", "-a"], check=True, capture_output=True)
         printers = pr.stdout.decode("UTF-8").splitlines()
         printers = [p.split(" ")[0] for p in printers]
-    except subprocess.CalledProcessError:
-        click.ClickException("Unknown error.")
+    except FileNotFoundError:
+        raise click.ClickException(
+            "CUPS doesn't seem to be installed: lpstat unavailable."
+        )
+    except Exception:
+        raise click.ClickException("Unknown error.")
 
     return printers
 
@@ -168,9 +194,16 @@ def build_print_command(printer, staple, to_print):
 def set_stapling_option(printer, staple):
     """Get the printer-specific name of the option for staping and set it."""
     pattern = re.compile(r"staple", flags=re.IGNORECASE)
-    pr = subprocess.run(
-        ["lpoptions", "-p", printer, "-l"], check=True, capture_output=True
-    )
+    try:
+        pr = subprocess.run(
+            ["lpoptions", "-p", printer, "-l"], check=True, capture_output=True
+        )
+    except FileNotFoundError:
+        raise click.ClickException(
+            "CUPS doesn't seem to be installed: lpoptions unavailable."
+        )
+    except Exception:
+        raise click.ClickException("Unknown error.")
     options = pr.stdout.decode("UTF-8").splitlines()
     stapling = [opt for opt in options if pattern.search(opt) is not None]
 
