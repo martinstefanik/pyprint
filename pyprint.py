@@ -26,6 +26,14 @@ __version__ = "1.0.0"
     "this option is ignored if given.",
 )
 @click.option(
+    "-n",
+    "--n-copies",
+    type=click.IntRange(min=1, max=None),
+    default=1,
+    show_default=True,
+    help="Number of copies of each document to print.",
+)
+@click.option(
     "-p",
     "--printer",
     type=click.STRING,
@@ -63,7 +71,9 @@ __version__ = "1.0.0"
     "list of files that would be printed with the current set of options.",
 )
 @click.version_option(version=__version__, message="%(version)s")
-def main(resource, dry_run, include_hidden, printer, regex, staple, sides):
+def main(
+    resource, dry_run, n_copies, include_hidden, printer, regex, staple, sides
+):
     """
     Print the given RESOURCE, which can be either a file or a directory. If
     RESOURCE is a directory, all files located under that directory are printed
@@ -104,13 +114,15 @@ def main(resource, dry_run, include_hidden, printer, regex, staple, sides):
 
     # Print the files
     if dry_run:
-        _ = build_print_command(printer, staple, sides, to_print)
+        _ = build_print_command(printer, n_copies, staple, sides, to_print)
         click.echo(
             f"The following files would be sent to printer '{printer}':\n"
             "  " + "\n  ".join(to_print)
         )
     else:
-        command = build_print_command(printer, staple, sides, to_print)
+        command = build_print_command(
+            printer, n_copies, staple, sides, to_print
+        )
         try:
             subprocess.run(command, stdout=subprocess.DEVNULL, check=True)
         except FileNotFoundError:
@@ -176,7 +188,7 @@ def files(dir, include_hidden):
             yield os.path.join(root, e)
 
 
-def build_print_command(printer, staple, sides, to_print):
+def build_print_command(printer, n_copies, staple, sides, to_print):
     """Build an `lp` print command based on the user input."""
     stapling_option = set_stapling_option(printer, staple)
     if sides == "1":
@@ -187,6 +199,8 @@ def build_print_command(printer, staple, sides, to_print):
         "lp",
         "-d",
         printer,
+        "-n",
+        n_copies,
         "-o",
         f"sides={sides}",
         "-o",
