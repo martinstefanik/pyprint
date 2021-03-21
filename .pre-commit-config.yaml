@@ -12,12 +12,22 @@ repos:
     rev: 20.8b1
     hooks:
     - id: black
-      args: ["--safe", "--quiet", "--line-length", "80"]
+      args: [
+          "--safe",
+          "--quiet",
+          "--line-length", "80"
+      ]
 
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.8.4
     hooks:
       - id: flake8
+        args: [
+            "--max-line-length", "80",
+            "--extend-ignore", "D205,D212,D415,E203",
+            "--exclude", ".eggs,.git,__pycache__,.tox,.vscode,build/,dist/",
+            "--docstring-convention", "google"
+        ]
         language_version: python3
         additional_dependencies:
           - flake8-docstrings==1.5.0
@@ -26,3 +36,7 @@ repos:
     rev: 5.6.4
     hooks:
       - id: isort
+        args: [
+            "--profile", "black",
+            "--line-length", "80"
+        ]
