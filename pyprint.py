@@ -200,7 +200,7 @@ def build_print_command(printer, n_copies, staple, sides, to_print):
         "-d",
         printer,
         "-n",
-        n_copies,
+        str(n_copies),
         "-o",
         f"sides={sides}",
         "-o",
