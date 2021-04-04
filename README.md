@@ -1,8 +1,8 @@
 # pyprint
 
-A command line tool for sending files to print on a Unix-like operating system such as Linux or macOS. The main purpose of the tool is to allow the user to easily print a large number of files following a certain naming pattern that are located in different directories on the file system. This functionality can essentially be replicated by piping the output of the command line tool `find` or `fd` into `lp` with arguments that can be discovered with `lpoptions` and `lpstat`. `pyprint` is intended to simplify this for users that are not familiar with these commands and/or piping. On top of this simplification, it simplifies the process of discovering and setting options for operations such as stapling. The names of these options and the names of their valid values are typically dependent on the brand of the printing device.
+A command line tool for sending files to print on a Unix-like operating system such as Linux or macOS. The main purpose of the tool is to allow the user to easily print a large number of files following a certain naming pattern that are located in different directories on the file system. This functionality can essentially be replicated by piping the output of the command line tool such as `find` or `fd` into `lp` with arguments and option names that can be discovered with `lpoptions` and `lpstat`. The names of these options and the names of their valid values are typically dependent on the brand of the printing device. `pyprint` is intended to simplify this process, especially for users not familiar with these commands and/or piping.
 
-`pyprint` is currently not intended to be extremely customizable. The goal is to provide the most common options with reasonable defaults.
+`pyprint` is currently not intended to be very customizable. The goal is to provide the most common options with reasonable defaults.
 
 # Installation
 
