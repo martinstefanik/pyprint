@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Print all files satisfying a pattern."""
+"""Copyright (c) 2021 Martin Stefanik"""
 
 import os
 import re
