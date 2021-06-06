@@ -149,7 +149,9 @@ def prompt_for_printer(printers):
 def get_available_printers():
     """Get the list of available printers."""
     try:
-        pr = subprocess.run(["lpstat", "-a"], check=True, capture_output=True)
+        pr = subprocess.run(
+            ["/usr/bin/lpstat", "-a"], check=True, capture_output=True
+        )
         printers = pr.stdout.decode("UTF-8").splitlines()
         printers = [p.split(" ")[0] for p in printers]
     except FileNotFoundError:
@@ -196,7 +198,7 @@ def build_print_command(printer, n_copies, staple, sides, to_print):
     else:
         sides = "two-sided-long-edge"
     command = [
-        "lp",
+        "/usr/bin/lp",
         "-d",
         printer,
         "-n",
@@ -221,7 +223,9 @@ def set_stapling_option(printer, staple):
     pattern = re.compile(r"staple", flags=re.IGNORECASE)
     try:
         pr = subprocess.run(
-            ["lpoptions", "-p", printer, "-l"], check=True, capture_output=True
+            ["/usr/bin/lpoptions", "-p", printer, "-l"],
+            check=True,
+            capture_output=True,
         )
     except FileNotFoundError:
         raise click.ClickException(

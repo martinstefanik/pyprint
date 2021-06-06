@@ -42,7 +42,7 @@ This prints all the PDF files located in `~/Documents/library` two-sided and sta
 
 If the `--printer` option is omitted, the user is shown the list of available printers and is prompted to choose one of them as follows
 
-```bash
+```shell
 Available printers:
   1) HP_LaserJet_office
   2) HP_LaserJet_hall
