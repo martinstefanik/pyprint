@@ -26,7 +26,7 @@ In order to remove `pyprint`, simply run
 pip uninstall pyprint
 ```
 
-`pyprint` requires the `cups` package to be installed on the system. Many Linux distributions comes with `cups` pre-installed, but you might need to install it manually.
+`pyprint` requires the `cups` package to be installed on the system. Many Linux distributions come with `cups` pre-installed, but you might need to install it manually.
 
 # Usage
 
